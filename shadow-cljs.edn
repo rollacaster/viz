@@ -1,9 +1,5 @@
-{:dependencies
- [[cljs-bean "1.8.0"]]
-
- :source-paths
- ["src"]
-
+{:deps true
+ :nrepl {:port 9100}
  :builds
  {:script {:target :node-script
            :main tech.thomas-sojka.viz.climate-change.core/main

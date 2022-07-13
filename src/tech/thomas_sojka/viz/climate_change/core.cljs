@@ -8,7 +8,7 @@
 
 (def reader
   (new netcdfjs/NetCDFReader
-       (fs/readFileSync "../resources/gistemp250_GHCNv4.nc")))
+       (fs/readFileSync "./resources/gistemp250_GHCNv4.nc")))
 (comment
   (keys (->clj reader))
   (map (comp :name bean) (:variables (bean (:header (bean reader)))))
