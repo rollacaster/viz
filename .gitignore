@@ -1,0 +1,6 @@
+/.shadow-cljs/
+/.clj-kondo/
+/.lsp/
+/node_modules/
+/target/
+/resources/gistemp250_GHCNv4.nc

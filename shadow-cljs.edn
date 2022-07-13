@@ -1,0 +1,10 @@
+{:dependencies
+ [[cljs-bean "1.8.0"]]
+
+ :source-paths
+ ["src"]
+
+ :builds
+ {:script {:target :node-script
+           :main tech.thomas-sojka.viz.climate-change.core/main
+           :output-to "target/script.js" }}}
