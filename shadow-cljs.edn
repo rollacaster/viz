@@ -3,4 +3,9 @@
  :builds
  {:script {:target :node-script
            :main tech.thomas-sojka.viz.climate-change.core/main
-           :output-to "target/script.js" }}}
+           :output-to "target/script.js" }
+  :app {:target :browser
+        :output-dir "resources/public/js"
+        :asset-path "/js"
+        :compiler-options {:output-feature-set :es6}
+        :modules {:main {:init-fn tech.thomas-sojka.viz.climate-change.app/main}}}}}

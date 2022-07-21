@@ -1,6 +1,7 @@
 {:paths ["src"]
  :deps {babashka/process {:mvn/version "0.1.2"}
         cljs-bean/cljs-bean {:mvn/version "1.8.0"}
+        org.babashka/http-server {:mvn/version "0.1.11"}
         thheller/shadow-cljs {:mvn/version "2.19.5"}}
  :aliases {:dev {:main-opts ["-m" "shadow" "--middleware" "[refactor-nrepl.middleware/wrap-refactor,shadow.cljs.devtools.server.nrepl/middleware]"]
                  :extra-paths ["dev"]}}}
