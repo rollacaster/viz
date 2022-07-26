@@ -7,5 +7,5 @@
   :app {:target :browser
         :output-dir "resources/public/js"
         :asset-path "/js"
-        :compiler-options {:output-feature-set :es6}
+        :compiler-options {:output-feature-set :es-next}
         :modules {:main {:init-fn tech.thomas-sojka.viz.climate-change.app/main}}}}}
