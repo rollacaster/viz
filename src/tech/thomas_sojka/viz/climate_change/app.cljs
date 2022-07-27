@@ -7,7 +7,7 @@
 
 (def data
   (r/atom
-   [[5 2 1][2 2 1][1 1 1]]))
+   [[5 2 1][2 2 1][1 1 1] [1 1 1]]))
 
 (def path (d3-geo/geoPath))
 
@@ -18,25 +18,38 @@
      [:div {:style {:position "absolute"
                     :display "flex"
                     :flex-wrap "wrap"
-                    :height "100%"}}
+                    :width (* (count (first data)) (/ 500 (count data)))
+                    :height 500}}
       (map-indexed
        (fn [y row]
          (map-indexed
           (fn [x cell]
-            [:input {:style {:width (str (* 100 (/ 1 (count (first data)))) "%")
-                             :height (str (* 100 (/ 1 (count data))) "%")
-                             :background "rgba(255,255,255,0.2)"
-                             :padding 0
-                             :border 0
-                             :font-size "12rem"
-                             :text-align "center"}
-                     :key [x y]
-                     :value cell
-                     :on-change (fn [e] (set-data! x y ^js (.-target.value e)))}])
+            [:div
+             {:style {:display "flex"
+                      :flex-direction "column"
+                      :justify-content "center"
+                      :align-items "center"
+                      :width (str (* 100 (/ 1 (count (first data)))) "%")
+                      :height (str (* 100 (/ 1 (count data))) "%")}}
+             [:input {:style {:background "transparent"
+                              :padding 0
+                              :border 0
+
+                              :text-align "center"}
+                      :key [x y]
+                      :value cell
+                      :on-change (fn [e] (set-data! x y ^js (.-target.value e)))}]
+             [:input {:type "range"
+                      :min -10
+                      :max 10
+                      :value cell
+                      :on-change (fn [e] (set-data! x y ^js (.-target.value e)))
+                      :style {:width "50%"}}]])
           row))
        data)]
      [:svg
-      {:viewBox (str 0 " " 0 " " (count (first data)) " " (count data))}
+      {:viewBox (str 0 " " 0 " " (count (first data)) " " (count data))
+       :style {:height 500}}
       [:g
        (map-indexed
         (fn
