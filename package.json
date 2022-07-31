@@ -1,6 +1,15 @@
 {
+  "scripts": {
+    "build": "postcss resources/styles.css --dir resources/public/css",
+    "dev": "postcss resources/styles.css --dir resources/public/css -w"
+  },
   "devDependencies": {
-    "shadow-cljs": "^2.19.5"
+    "autoprefixer": "^10.4.8",
+    "cssnano": "^5.1.12",
+    "postcss": "^8.4.14",
+    "postcss-cli": "^10.0.0",
+    "shadow-cljs": "^2.19.5",
+    "tailwindcss": "^3.1.7"
   },
   "dependencies": {
     "d3-contour": "^4.0.0",

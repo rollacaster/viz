@@ -11,6 +11,7 @@
   (shadow/watch :script)
   (shadow/watch :app)
   (process '[node target/script.js])
+  (process '[npx run dev])
   (shadow/nrepl-select :script)
   (http-server/serve {:port 9101 :dir "resources/public"})
   (browse/browse-url "http://localhost:9101"))
