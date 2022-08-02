@@ -15,7 +15,7 @@
 
 (def thresholds [1 2 4 6 8])
 
-(defn randomize [data] (map (fn [row] (map (fn [_] (rand-int 10)) row)) data))
+(defn randomize [data] (mapv (fn [row] (mapv (fn [_] (rand-int 10)) row)) data))
 
 (def path (d3-geo/geoPath))
 (def palette-idx (r/atom 19))
@@ -24,7 +24,7 @@
   (let [contours (-> (d3-contour/contours)
                      (.size (clj->js [(count (first data)) (count data)])))]
     [:div
-     [:div.mb-4 {:class "w-1/2"}
+     [:div.mb-4 {:class "w-3/4"}
       [:div.flex.justify-between.items-stretch.w-full
        [:div.flex.flex-wrap.max-w-full.absolute
         {:style {:height 500}}
@@ -47,7 +47,7 @@
                  :on-change (fn [e] (set-cell! x y ^js (.-target.value e)))}]])
             row))
          data)]
-       [:svg.max-w-full
+       [:svg.max-w-full.flex-1
         {:viewBox (str 0 " " 0 " " (count (first data)) " " (count data))
          :style {:height 500}}
         [:g
@@ -60,16 +60,16 @@
                 :d (path (.contour contours (clj->js (flatten data)) t))
                 :fill (nth (nth palettes @palette-idx) i)}])
             thresholds))]]
-       [:button.text-4xl.bg-gray-400 {:on-click add-column!}"+"]]
-      [:div.flex.justify-center
-       [:button.text-4xl.bg-gray-400.w-full {:on-click add-row!}"+"]]]
-
-
+       [:button.text-3xl.bg-gray-400.w-10.hover:bg-gray-600.hover:text-white
+        {:on-click add-column!}"+"]]
+      [:div.flex.justify-center.items-center
+       [:button.text-3xl.bg-gray-400.w-full.h-10.hover:bg-gray-600.hover:text-white
+        {:on-click add-row!} "+"]]]
      [:button.bg-gray-400.mr-2 {:on-click #(update-data! randomize)} "Randomize weights"]
      [:button.bg-gray-400 {:on-click #(reset! palette-idx (rand-int (count palettes)))} "Randomize colors"]]))
 
 (defn app []
-  [:div.m-8
+  [:div
    [contour-example {:data @data
                      :add-row! #(swap! data add-row)
                      :add-column! #(swap! data add-column)
