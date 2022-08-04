@@ -20,38 +20,60 @@
 (def path (d3-geo/geoPath))
 (def palette-idx (r/atom 19))
 
+(defn cell-button []
+  (let [visible (r/atom false)]
+    (fn [{:keys [data x y cell set-cell!]}]
+
+      [:div.flex.justify-center.items-center.px-4
+       {:class (if @visible "opacity-100" "opacity-0")
+        :on-mouse-enter #(reset! visible true)
+        :on-mouse-move #(reset! visible true)
+        :on-mouse-leave #(reset! visible false)
+        :style {:width (str (* 100 (/ 1 (count (first data)))) "%")
+                :height (str (* 100 (/ 1 (count data))) "%")}}
+       [:button.bg-gray-100.w-4.h-4.leading-none.rounded-full.font-bold
+        {:type "button"
+         :value cell
+         :on-click (fn [] (set-cell! x y (js/Math.max 0 (dec cell))))}
+        "-"]
+       [:input.bg-transparent.text-center.flex-1
+        {:key [x y]
+         :style {:max-width 20}
+         :value cell
+         :on-change (fn [e] (set-cell! x y ^js (.-target.value e)))}]
+       [:button.bg-gray-100.w-4.h-4.leading-none.rounded-full.font-bold
+        {:type "button"
+         :value cell
+         :on-click (fn []
+                     (set-cell! x y (js/Math.min 9 (inc cell))))}
+        "+"]])))
+
 (defn contour-example [{:keys [add-row! add-column! data set-cell! update-data!]}]
-  (let [contours (-> (d3-contour/contours)
-                     (.size (clj->js [(count (first data)) (count data)])))]
+  (let [width (count (first data))
+        height (count data)
+        contours (-> (d3-contour/contours)
+                     (.size (clj->js [width height])))
+        contour-height 500]
     [:div
      [:div.mb-4 {:class "w-3/4"}
-      [:div.flex.justify-between.items-stretch.w-full
-       [:div.flex.flex-wrap.max-w-full.absolute
-        {:style {:height 500}}
-        (map-indexed
-         (fn [y row]
-           (map-indexed
-            (fn [x cell]
-              [:div.flex.flex-col.justify-center.items-center
-               {:style {:width (str (* 100 (/ 1 (count (first data)))) "%")
-                        :height (str (* 100 (/ 1 (count data))) "%")}}
-               [:input.bg-transparent.text-center.max-w-full.hidden
-                {:key [x y]
-                 :value cell
-                 :on-change (fn [e] (set-cell! x y ^js (.-target.value e)))}]
-               [:input.max-w-full.hidden
-                {:type "range"
-                 :min 0
-                 :max 9
-                 :value cell
-                 :on-change (fn [e] (set-cell! x y ^js (.-target.value e)))}]])
-            row))
-         data)]
-       [:svg.max-w-full.flex-1
-        {:viewBox (str 0 " " 0 " " (count (first data)) " " (count data))
-         :style {:height 500}}
-        [:g
-         (doall
+      [:div.flex
+       [:div.flex.justify-center.items-center.w-full
+        [:div.flex.flex-wrap.max-w-full.absolute
+         {:style {:height (js/Math.min 500 (* (* js/window.innerWidth 0.75) (/ height width)))
+                  :width (js/Math.min (* js/window.innerWidth 0.75) (* contour-height (/ width height)))}
+          :class "w-3/4"}
+         (map-indexed
+          (fn [y row]
+            (map-indexed
+             (fn [x cell]
+               [cell-button {:data data :cell cell :set-cell! set-cell! :x x :y y}])
+             row))
+          data)]
+        [:svg.max-w-full.flex-1
+         {:viewBox (str 0 " " 0 " " (count (first data)) " " (count data))
+          :style {:height contour-height}}
+         [:g
+          (doall
            (map-indexed
             (fn
               [i t]
@@ -59,10 +81,10 @@
                {:key i
                 :d (path (.contour contours (clj->js (flatten data)) t))
                 :fill (nth (nth palettes @palette-idx) i)}])
-            thresholds))]]
-       [:button.text-3xl.bg-gray-400.w-10.hover:bg-gray-600.hover:text-white
+            thresholds))]]]
+       [:button.text-3xl.bg-gray-400.w-10.hover:bg-gray-600.hover:text-white.z-10
         {:on-click add-column!}"+"]]
-      [:div.flex.justify-center.items-center
+      [:div.flex.justify-center.items-center.z-10
        [:button.text-3xl.bg-gray-400.w-full.h-10.hover:bg-gray-600.hover:text-white
         {:on-click add-row!} "+"]]]
      [:button.bg-gray-400.mr-2 {:on-click #(update-data! randomize)} "Randomize weights"]
