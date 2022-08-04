@@ -9,16 +9,16 @@
 (defn add-row [data] (conj data (vec (repeat (count (first data)) 1))))
 (defn add-column [data] (mapv #(conj % 1) data))
 
-(defonce data
+(defonce state
   (r/atom
-   [[5 2 1][2 2 1][1 1 1] [1 1 1]]))
+   {:data [[5 2 1][2 2 1][1 1 1] [1 1 1]]
+    :palette-idx 19}))
 
 (def thresholds [1 2 4 6 8])
 
 (defn randomize [data] (mapv (fn [row] (mapv (fn [_] (rand-int 10)) row)) data))
 
 (def path (d3-geo/geoPath))
-(def palette-idx (r/atom 19))
 
 (defn cell-button []
   (let [visible (r/atom false)]
@@ -48,7 +48,7 @@
                      (set-cell! x y (js/Math.min 9 (inc cell))))}
         "+"]])))
 
-(defn contour-example [{:keys [add-row! add-column! data set-cell! update-data!]}]
+(defn contour-playground [{:keys [palette-idx set-palette-idx! add-row! add-column! data set-cell! update-data!]}]
   (let [width (count (first data))
         height (count data)
         contours (-> (d3-contour/contours)
@@ -80,7 +80,7 @@
               [:path
                {:key i
                 :d (path (.contour contours (clj->js (flatten data)) t))
-                :fill (nth (nth palettes @palette-idx) i)}])
+                :fill (nth (nth palettes palette-idx) i)}])
             thresholds))]]]
        [:button.text-3xl.bg-gray-400.w-10.hover:bg-gray-600.hover:text-white.z-10
         {:on-click add-column!}"+"]]
@@ -88,15 +88,18 @@
        [:button.text-3xl.bg-gray-400.w-full.h-10.hover:bg-gray-600.hover:text-white
         {:on-click add-row!} "+"]]]
      [:button.bg-gray-400.mr-2 {:on-click #(update-data! randomize)} "Randomize weights"]
-     [:button.bg-gray-400 {:on-click #(reset! palette-idx (rand-int (count palettes)))} "Randomize colors"]]))
+     [:button.bg-gray-400 {:on-click #(set-palette-idx! (rand-int (count palettes)))} "Randomize colors"]]))
 
 (defn app []
   [:div
-   [contour-example {:data @data
-                     :add-row! #(swap! data add-row)
-                     :add-column! #(swap! data add-column)
-                     :update-data! (fn [f] (swap! data f))
-                     :set-cell! (fn [x y value] (swap! data assoc-in [y x] (int value)))}]])
+   (let [{:keys [data palette-idx]} @state]
+     [contour-playground {:data data
+                          :palette-idx palette-idx
+                          :set-palette-idx! #(swap! state assoc :palette-idx %)
+                          :add-row! #(swap! state update :data add-row)
+                          :add-column! #(swap! state update :data add-column)
+                          :update-data! (fn [f] (swap! state update :data f))
+                          :set-cell! (fn [x y value] (swap! state assoc-in [:data y x] (int value)))}])])
 
 (dom/render
  [app]
