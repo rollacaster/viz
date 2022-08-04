@@ -48,7 +48,7 @@
                      (set-cell! x y (js/Math.min 9 (inc cell))))}
         "+"]])))
 
-(defn contour-playground [{:keys [palette-idx set-palette-idx! add-row! add-column! data set-cell! update-data!]}]
+(defn contour-playground [{:keys [palette random-palette! add-row! add-column! data set-cell! randomize-weights!]}]
   (let [width (count (first data))
         height (count data)
         contours (-> (d3-contour/contours)
@@ -80,25 +80,25 @@
               [:path
                {:key i
                 :d (path (.contour contours (clj->js (flatten data)) t))
-                :fill (nth (nth palettes palette-idx) i)}])
+                :fill (nth palette i)}])
             thresholds))]]]
        [:button.text-3xl.bg-gray-400.w-10.hover:bg-gray-600.hover:text-white.z-10
         {:on-click add-column!}"+"]]
       [:div.flex.justify-center.items-center.z-10
        [:button.text-3xl.bg-gray-400.w-full.h-10.hover:bg-gray-600.hover:text-white
         {:on-click add-row!} "+"]]]
-     [:button.bg-gray-400.mr-2 {:on-click #(update-data! randomize)} "Randomize weights"]
-     [:button.bg-gray-400 {:on-click #(set-palette-idx! (rand-int (count palettes)))} "Randomize colors"]]))
+     [:button.bg-gray-400.mr-2 {:on-click randomize-weights!} "Randomize weights"]
+     [:button.bg-gray-400 {:on-click random-palette!} "Randomize colors"]]))
 
 (defn app []
   [:div
    (let [{:keys [data palette-idx]} @state]
      [contour-playground {:data data
-                          :palette-idx palette-idx
-                          :set-palette-idx! #(swap! state assoc :palette-idx %)
+                          :palette (nth palettes palette-idx)
+                          :random-palette! #(swap! state assoc :palette-idx (rand-int (count palettes)))
                           :add-row! #(swap! state update :data add-row)
                           :add-column! #(swap! state update :data add-column)
-                          :update-data! (fn [f] (swap! state update :data f))
+                          :randomize-weights! #(swap! state update :data randomize)
                           :set-cell! (fn [x y value] (swap! state assoc-in [:data y x] (int value)))}])])
 
 (dom/render
