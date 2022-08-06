@@ -11,7 +11,7 @@
 
 (defonce state
   (r/atom
-   {:data [[5 2 1][2 2 1][1 1 1] [1 1 1]]
+   {:data [[5 2 1 1 1 1] [2 2 1 1 1 1] [1 1 1 1 1 1]]
     :palette-idx 19}))
 
 (def thresholds [1 2 4 6 8])
@@ -23,7 +23,6 @@
 (defn cell-button []
   (let [visible (r/atom false)]
     (fn [{:keys [data x y cell set-cell!]}]
-
       [:div.flex.justify-center.items-center.px-4
        {:class (if @visible "opacity-100" "opacity-0")
         :on-mouse-enter #(reset! visible true)
@@ -85,18 +84,23 @@
                     :d (path (.contour contours (clj->js (flatten data)) t))
                     :fill (nth palette i)}])
                 thresholds))]]]
-           [:button.text-3xl.bg-gray-400.w-10.hover:bg-gray-600.hover:text-white.z-10
+           [:button.text-3xl.bg-gray-400.w-10.hover:bg-gray-600.text-white.z-10.rounded-t-lg
             {:on-click add-column!}"+"]]
           [:div.flex.justify-center.items-center.z-10
-           [:button.text-3xl.bg-gray-400.w-full.h-10.hover:bg-gray-600.hover:text-white
+           [:button.text-3xl.bg-gray-400.w-full.h-10.hover:bg-gray-600.text-white.rounded-l-lg.rounded-br.-lg
             {:on-click add-row!} "+"]]]
-         [:button.bg-gray-400.mr-2 {:on-click randomize-weights!} "Randomize weights"]
-         [:button.bg-gray-400 {:on-click random-palette!} "Randomize colors"]]))))
+         [:button.bg-gray-400.text-white.py-2.px-3.rounded.shadow-lg.transition.hover:scale-105.delay-150.mr-2
+          {:on-click randomize-weights!} "Randomize weights"]
+         [:button.bg-gray-400.text-white.py-2.px-3.rounded.shadow-lg.transition.hover:scale-105.delay-150
+          {:on-click random-palette!}
+          "Randomize colors"]]))))
 
 (defn app []
-  [:section.max-w-5xl.mx-auto
-   [:h1 "d3-countour exlained by example"]
-   [:h2 "Countour Playground"]
+  [:section.max-w-5xl.mx-auto.text-gray-800.p-4
+   [:h1.text-5xl.mt-12.mb-3 "d3-contour by example"]
+   [:p.mb-12 "Aliquam erat volutpat.  Nunc eleifend leo vitae magna.  In id erat non orci commodo lobortis.  Proin neque massa, cursus ut, gravida ut, lobortis eget, lacus.  Sed diam.  Praesent fermentum tempor tellus.  Nullam tempus.  Mauris ac felis vel velit tristique imperdiet.  Donec at pede.  Etiam vel neque nec dui dignissim bibendum.  Vivamus id enim.  Phasellus neque orci, porta a, aliquet quis, semper a, massa.  Phasellus purus.  Pellentesque tristique imperdiet tortor.  Nam euismod tellus id erat."]
+   [:h2.text-3xl.mb-3 "Countour Playground"]
+   [:p.mb-8 "Aliquam erat volutpat.  Nunc eleifend leo vitae magna.  In id erat non orci commodo lobortis.  Proin neque massa, cursus ut, gravida ut, lobortis eget, lacus.  Sed diam.  Praesent fermentum tempor tellus.  Nullam tempus.  Mauris ac felis vel velit tristique imperdiet.  Donec at pede.  Etiam vel neque nec dui dignissim bibendum.  Vivamus id enim.  Phasellus neque orci, porta a, aliquet quis, semper a, massa.  Phasellus purus.  Pellentesque tristique imperdiet tortor.  Nam euismod tellus id erat."]
    (let [{:keys [data palette-idx]} @state]
      [contour-playground {:data data
                           :palette (nth palettes palette-idx)
