@@ -48,50 +48,55 @@
                      (set-cell! x y (js/Math.min 9 (inc cell))))}
         "+"]])))
 
-(defn contour-playground [{:keys [palette random-palette! add-row! add-column! data set-cell! randomize-weights!]}]
-  (let [width (count (first data))
-        height (count data)
-        contours (-> (d3-contour/contours)
-                     (.size (clj->js [width height])))
-        contour-height 500]
-    [:div
-     [:div.mb-4 {:class "w-3/4"}
-      [:div.flex
-       [:div.flex.justify-center.items-center.w-full
-        [:div.flex.flex-wrap.max-w-full.absolute
-         {:style {:height (js/Math.min 500 (* (* js/window.innerWidth 0.75) (/ height width)))
-                  :width (js/Math.min (* js/window.innerWidth 0.75) (* contour-height (/ width height)))}
-          :class "w-3/4"}
-         (map-indexed
-          (fn [y row]
-            (map-indexed
-             (fn [x cell]
-               [cell-button {:data data :cell cell :set-cell! set-cell! :x x :y y}])
-             row))
-          data)]
-        [:svg.max-w-full.flex-1
-         {:viewBox (str 0 " " 0 " " (count (first data)) " " (count data))
-          :style {:height contour-height}}
-         [:g
-          (doall
-           (map-indexed
-            (fn
-              [i t]
-              [:path
-               {:key i
-                :d (path (.contour contours (clj->js (flatten data)) t))
-                :fill (nth palette i)}])
-            thresholds))]]]
-       [:button.text-3xl.bg-gray-400.w-10.hover:bg-gray-600.hover:text-white.z-10
-        {:on-click add-column!}"+"]]
-      [:div.flex.justify-center.items-center.z-10
-       [:button.text-3xl.bg-gray-400.w-full.h-10.hover:bg-gray-600.hover:text-white
-        {:on-click add-row!} "+"]]]
-     [:button.bg-gray-400.mr-2 {:on-click randomize-weights!} "Randomize weights"]
-     [:button.bg-gray-400 {:on-click random-palette!} "Randomize colors"]]))
+(defn contour-playground []
+  (let [inner-width (r/atom js/window.innerWidth)]
+    (.addEventListener js/window "resize" (fn [] (reset! inner-width js/window.innerWidth)) true)
+    (fn [{:keys [palette random-palette! add-row! add-column! data set-cell! randomize-weights!]}]
+      (let [width (count (first data))
+            height (count data)
+            contours (-> (d3-contour/contours)
+                         (.size (clj->js [width height])))
+            container-height 500]
+        [:div
+         [:div.mb-4
+          [:div.flex
+           [:div.flex.justify-center.items-center.w-full
+            [:div.flex.flex-wrap.max-w-full.absolute
+             (let [container-width (js/Math.min @inner-width (* container-height (/ width height)) 1024)]
+               {:style {:height (js/Math.min 500 (* container-width (/ height width)))
+                        :width container-width}})
+             (map-indexed
+              (fn [y row]
+                (map-indexed
+                 (fn [x cell]
+                   [cell-button {:data data :cell cell :set-cell! set-cell! :x x :y y}])
+                 row))
+              data)]
+            [:svg.max-w-full.flex-1
+             {:viewBox (str 0 " " 0 " " (count (first data)) " " (count data))
+              :style {:height container-height}}
+             [:g
+              (doall
+               (map-indexed
+                (fn
+                  [i t]
+                  [:path
+                   {:key i
+                    :d (path (.contour contours (clj->js (flatten data)) t))
+                    :fill (nth palette i)}])
+                thresholds))]]]
+           [:button.text-3xl.bg-gray-400.w-10.hover:bg-gray-600.hover:text-white.z-10
+            {:on-click add-column!}"+"]]
+          [:div.flex.justify-center.items-center.z-10
+           [:button.text-3xl.bg-gray-400.w-full.h-10.hover:bg-gray-600.hover:text-white
+            {:on-click add-row!} "+"]]]
+         [:button.bg-gray-400.mr-2 {:on-click randomize-weights!} "Randomize weights"]
+         [:button.bg-gray-400 {:on-click random-palette!} "Randomize colors"]]))))
 
 (defn app []
-  [:div
+  [:section.max-w-5xl.mx-auto
+   [:h1 "d3-countour exlained by example"]
+   [:h2 "Countour Playground"]
    (let [{:keys [data palette-idx]} @state]
      [contour-playground {:data data
                           :palette (nth palettes palette-idx)
