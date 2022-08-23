@@ -20,13 +20,17 @@
 
 (def path (d3-geo/geoPath))
 
+(defn width [data] (count (first data)))
+(defn height [data] (count data))
+
 (defn cell-button [{:keys [hoverable? class]}]
   (let [visible (r/atom (if hoverable? false true))]
     (fn [{:keys [data x y cell set-cell!]}]
       (let [width (count (first data))
             height (count data)]
         [:div.flex.justify-center.items-center.px-4
-         {:class [(if @visible "opacity-100" "opacity-0") class]
+         {:key [x y]
+          :class [(if @visible "opacity-100" "opacity-0") class]
           :on-mouse-enter #(when hoverable? (reset! visible true))
           :on-mouse-move  #(when hoverable? (reset! visible true))
           :on-mouse-leave #(when hoverable? (reset! visible false))
@@ -49,56 +53,66 @@
                        (set-cell! x y (js/Math.min 9 (inc cell))))}
           "+"]]))))
 
-(defn contour [{:keys [data container-height palette style]}]
-  (let [width (count (first data))
-        height (count data)
-        contours (-> (d3-contour/contours) (.size (clj->js [width height])))]
-    [:svg.max-w-full.flex-1
-     {:viewBox (str 0 " " 0 " " (count (first data)) " " (count data))
-      :style (merge {:height container-height} style)}
-     [:g
-      (doall
-       (map-indexed
-        (fn
-          [i t]
-          [:path
-           {:key i
-            :d (path (.contour contours (clj->js (flatten data)) t))
-            :fill (nth palette i)}])
-        thresholds))]]))
+(defn contour [{:keys [data container-height palette style contours]}]
+  [:svg.max-w-full.flex-1
+   {:viewBox (str 0 " " 0 " " (width data) " " (height data))
+    :style (merge {:height container-height} style)}
+   [:g
+    (doall
+     (map-indexed
+      (fn
+        [i t]
+        [:path
+         {:key i
+          :d (path (.contour contours (clj->js (flatten data)) t))
+          :fill (nth palette i)}])
+      thresholds))]])
+
+(defn auto-contour [{:keys [data container-height palette style contours]}]
+  [:svg.max-w-full.flex-1
+   {:viewBox (str 0 " " 0 " " (width data) " " (height data))
+    :style (merge {:height container-height} style)}
+   [:g
+    (map-indexed (fn [i c]
+                   [:path
+                    {:key i
+                     :d (path c)
+                     :fill (nth palette (mod i (count palette)))}])
+                 (contours (clj->js (flatten data))))]])
 
 (defn dataset []
   (let [inner-width (r/atom js/window.innerWidth)]
     (.addEventListener js/window "resize" (fn [] (reset! inner-width js/window.innerWidth)) true)
     (fn [{:keys [data container-height class]} children]
-      (let [width (count (first data))
-            height (count data)]
-        [:div.flex.flex-wrap.max-w-full
-         (let [container-width (js/Math.min @inner-width (* container-height (/ width height)) 1024)]
-           {:style {:height (js/Math.min 500 (* container-width (/ height width)))
-                    :width container-width}
-            :class class})
-         (map-indexed
-          (fn [y row]
-            (map-indexed
-             (fn [x cell]
-               ^{:key [x y]}
-               (children {:x x :y y :cell cell}))
-             row))
-          data)]))))
+      [:div.flex.flex-wrap.max-w-full
+       (let [container-ratio (* container-height (/ (width data) (height data)))
+             container-width (js/Math.min @inner-width container-ratio 1024)]
+         {:style {:height (js/Math.min 500 container-ratio)
+                  :width container-width}
+          :class class})
+       (map-indexed
+        (fn [y row]
+          (map-indexed
+           (fn [x cell]
+             ^{:key [x y]}
+             (children {:x x :y y :cell cell}))
+           row))
+        data)])))
 
 (defn contour-playground []
   (let [inner-width (r/atom js/window.innerWidth)]
     (.addEventListener js/window "resize" (fn [] (reset! inner-width js/window.innerWidth)) true)
-    (fn [{:keys [palette random-palette! data set-cell! randomize-weights! container-height]}]
+    (fn [{:keys [palette random-palette! data set-cell! randomize-weights! container-height
+                contour-component contours]}]
       [:div
        [:div.mb-4
         [:div.flex
          [:div.flex.justify-center.items-center.w-full
           [dataset {:data data  :container-height container-height :class "absolute"}
            (fn [{:keys [x y cell]}]
-             [cell-button {:x x :y y :cell cell :data data :set-cell! set-cell!  :hoverable? true}])]
-          [contour {:data data :palette palette :container-height container-height}]]]]
+             [cell-button {:key [x y] :x x :y y :cell cell :data data :set-cell! set-cell!  :hoverable? true}])]
+          [(or contour-component contour) {:data data :palette palette :container-height container-height
+                                           :contours contours}]]]]
        [:button.bg-gray-500.text-white.py-2.px-3.rounded.shadow-lg.transition.hover:scale-105.delay-150.mr-2
         {:on-click randomize-weights!} "Randomize weights"]
        [:button.bg-gray-500.text-white.py-2.px-3.rounded.shadow-lg.transition.hover:scale-105.delay-150
@@ -125,18 +139,20 @@
                   (reset! headline-data {:element element :size (headline-size element)})))}
         "d3-contour by example"]
        (when (:element @headline-data)
-         (let [[width height] (:size @headline-data)
+         (let [[headline-width headline-height] (:size @headline-data)
                resolution 150]
            [:div.absolute.top-0
-            {:style {:width width :height height}}
-            [contour {:style {:mix-blend-mode "lighten"}
-                      :data
-                      (->> (rand-int 10)
-                           (for [_ (range (* resolution (/ width (+ width height))))])
-                           vec
-                           (for [_ (range (* resolution (/ height (+ width height))))])
-                           vec)
-                      :palette (nth palettes 96)}]]))])))
+            {:style {:width headline-width :height headline-height}}
+            (let [headline-size (+ headline-width headline-height)
+                  data (->> (rand-int 10)
+                            (for [_ (range (* resolution (/ headline-width headline-size)))])
+                            vec
+                            (for [_ (range (* resolution (/ headline-height headline-size)))])
+                            vec)]
+              [contour {:style {:mix-blend-mode "lighten"}
+                        :data data
+                        :palette (nth palettes 96)
+                        :contours (-> (d3-contour/contours) (.size (clj->js [(width data) (height data)])))}])]))])))
 
 (defn section [{:keys [title]} children]
   [:<>
@@ -144,30 +160,31 @@
    [:div.mb-8
     children]])
 
-(defn threshold-layers [{:keys [data palette-idx]}]
+(defn threshold-layers [{:keys [data palette-idx multi-polygons]}]
   [:div.flex
    (let [width (count (first data))
-         height (count data)
-         contours (-> (d3-contour/contours) (.size (clj->js [width height])))]
+         height (count data)]
      (map-indexed
       (fn
         [i t]
         [:div {:class "w-1/5"
                :key i
-               :style {:left (str (* i (* (/ 1 5) 100)) "%")
+               :style {:left (str (* i (* (/ 1 (count multi-polygons)) 100)) "%")
                        :transition "all 1s"}}
          [:svg.border
           {:viewBox (str 0 " " 0 " " width " " height)}
           [:path
-           {:d (path (.contour contours (clj->js (flatten data)) t))
-            :fill (get (nth palettes palette-idx) i)}]]
-         [:div (str "Threshold: " t)]])
-      thresholds))])
+           {:d (path t)
+            :fill (get (nth palettes palette-idx) i)}]]])
+      multi-polygons))])
 
 (defn app []
   (let [{:keys [data palette-idx]} @state
         container-height 500
-        set-cell! (fn [x y value] (swap! state assoc-in [:data y x] (int value)))]
+        set-cell! (fn [x y value] (swap! state assoc-in [:data y x] (int value)))
+        width (count (first data))
+        height (count data)
+        contours (-> (d3-contour/contours) (.size (clj->js [width height])))]
     [:main.bg-gray-100.h-full
      [:section.max-w-5xl.mx-auto.text-gray-800.p-4
       [headline]
@@ -175,15 +192,11 @@
       [section {:title  "Create a dataset"}
        [dataset {:data data  :container-height container-height}
         (fn [{:keys [x y cell]}]
-          [cell-button {:x x :y y :cell cell :data data :set-cell! set-cell! :class "border"}])]]
+          [cell-button {:key [x y] :x x :y y :cell cell :data data :set-cell! set-cell! :class "border"}])]]
       [section {:title "Create contour generator"}
        [:pre "d3.contours().size([width, height])"]]
       [section {:title "Create a geographic path generator"}
        [:pre "d3.geoPath()"]]
-      [section {:title "Define thresholds"}
-       [:pre "[1 2 4 6 8]"]]
-      [section {:title "Render a path for each threshold"}
-       [threshold-layers {:data data :palette-idx palette-idx}]]
       [section {:title "Countour Playground"}
        [:<>
         [:p.mb-8 "Aliquam erat volutpat.  Nunc eleifend leo vitae magna.  In id erat non orci commodo lobortis.  Proin neque massa, cursus ut, gravida ut, lobortis eget, lacus.  Sed diam.  Praesent fermentum tempor tellus.  Nullam tempus.  Mauris ac felis vel velit tristique imperdiet.  Donec at pede.  Etiam vel neque nec dui dignissim bibendum.  Vivamus id enim.  Phasellus neque orci, porta a, aliquet quis, semper a, massa.  Phasellus purus.  Pellentesque tristique imperdiet tortor.  Nam euismod tellus id erat."]
@@ -192,7 +205,27 @@
                              :random-palette! #(swap! state assoc :palette-idx (rand-int (count palettes)))
                              :randomize-weights! #(swap! state update :data randomize)
                              :set-cell! set-cell!
-                             :container-height container-height}]]]]]))
+                             :container-height container-height
+                             :contours contours
+                             :contour-component auto-contour}]]]
+      [section {:title "Render a path for each threshold"}
+       [threshold-layers {:data data :palette-idx palette-idx
+                          :multi-polygons (contours (clj->js (flatten data)))}]]
+      [section {:title "Define thresholds"}
+       [:pre "[1 2 4 6 8]"]]
+      [section {:title "Render a path for each threshold"}
+       [threshold-layers {:data data :palette-idx palette-idx
+                          :multi-polygons (map #(.contour contours (clj->js (flatten data)) %) thresholds)}]]
+      [section {:title "Countour Playground"}
+       [:<>
+        [:p.mb-8 "Aliquam erat volutpat.  Nunc eleifend leo vitae magna.  In id erat non orci commodo lobortis.  Proin neque massa, cursus ut, gravida ut, lobortis eget, lacus.  Sed diam.  Praesent fermentum tempor tellus.  Nullam tempus.  Mauris ac felis vel velit tristique imperdiet.  Donec at pede.  Etiam vel neque nec dui dignissim bibendum.  Vivamus id enim.  Phasellus neque orci, porta a, aliquet quis, semper a, massa.  Phasellus purus.  Pellentesque tristique imperdiet tortor.  Nam euismod tellus id erat."]
+        [contour-playground {:data data
+                             :palette (nth palettes palette-idx)
+                             :random-palette! #(swap! state assoc :palette-idx (rand-int (count palettes)))
+                             :randomize-weights! #(swap! state update :data randomize)
+                             :set-cell! set-cell!
+                             :container-height container-height
+                             :contours contours}]]]]]))
 
 (defn main []
   )
