@@ -39,7 +39,7 @@
         c (->> contour-data into-array contours)]
     [:div
      [:input {:type "range" :min 0 :max 1704 :value @year :on-change #(reset! year ^js (.-target.value %))}]
-     [:span (+ 1880 (js/Math.floor (/ (int @year) 12)))]
+     [:span (str (+ 1880 (js/Math.floor (/ (int @year) 12))) "-" (inc (mod @year 12)))]
      [:style {:dangerouslySetInnerHTML {:__html ".contour:hover {fill: red}"}}]
      [:div.flex.items-center
       (map-indexed (fn [i contour]
