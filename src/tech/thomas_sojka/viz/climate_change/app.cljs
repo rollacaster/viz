@@ -50,8 +50,7 @@
                    c)]
 
      [:svg {:width 960 :height 500 :viewBox "0 0 960 500"}
-      [:g
-       [:path {:d (path geojson-world)}]]
+      [:g [:path {:d (path geojson-world)}]]
       [:g {:opacity 0.7}
        (->> c
             (map-indexed (fn [i cont]
@@ -61,15 +60,10 @@
                                         (for [ring polygon]
                                           (for [[lng lat] ring]
                                             [(lng-scale lng) (lat-scale lat)])))))
-                           (map
-                            (fn [polygon]
-                              (let [p #js {:type "Polygon" :coordinates polygon}]
-                                [:path.contour
-                                 {:key [i polygon]
-                                  :value (.-value cont)
-                                  :d (path p)
-                                  :fill (.interpolateMagma d3-scale-chromatic (/ i (count c)))}]))
-                            (.-coordinates cont)))))]]]))
+                           [:path.contour
+                            {:value (.-value cont)
+                             :d (path cont)
+                             :fill (.interpolateMagma d3-scale-chromatic (/ i (count c)))}])))]]]))
 
 (defn app []
   (when-not @surface-temperature-data
