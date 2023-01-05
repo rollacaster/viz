@@ -25,9 +25,8 @@
             (reset! world (.feature topojson d ^js (.-objects.land d))))))
 
 (def projection (d3-geo/geoMercator))
-
 (def path (d3-geo/geoPath projection))
-(def path2 (d3-geo/geoPath ))
+
 
 (def year (r/atom 1550))
 
@@ -66,47 +65,41 @@
                         [:div.mr-1 (.-value contour)]
                         [:span.inline-block.w-4.h-4 {:style {:background-color (.interpolateMagma d3-scale-chromatic (/ i (count c)))}}]])
                      c)]
+
        (when @world
-         [:div.relative
-          [:svg.absolute {:width 960 :height 500 :viewBox "0 0 960 500"}
-           [:g
-            (map
-             (fn [coordinates]
-               (let [p #js {:type "Polygon" :coordinates coordinates}]
-                 [:path {:key [coordinates]
-                         :d (path p)
-                         :on-click #(js/console.log
-                                     (.bounds path p)
-                                     (clj->js (map (fn [p] (.invert projection p)) (.bounds path p))))}]))
-             (.-geometry.coordinates (first (.-features @world))))]]
-          [:svg.absolute {:width 960 :height 500 :viewBox "0 0 180 90"}
-           [:g {:opacity 0.7}
-            (->> c
-                 (map-indexed (fn [i cont]
-                                (j/assoc! cont :coordinates
-                                          (clj->js
-                                           (for [polygon (js->clj (.-coordinates cont))]
-                                             (for [ring polygon]
-                                               (for [[lng lat] ring]
-                                                 [(lng-scale lng)
-                                                  (lat-scale lat)])))))
-                                (map
-                                 (fn [polygon]
-                                   (let [p #js {:type "Polygon" :coordinates polygon}]
-                                     [:path.contour
-                                      {:key [i polygon]
-                                       :value (.-value cont)
-                                       :on-click #(js/console.log
-                                                   (.-value cont)
-                                                   (.bounds path p)
-                                                   (clj->js (map (fn [p] (.invert projection p)) (.bounds path p))))
-                                       :d ((-> path2
-                                               (.projection  (-> (d3-geo/geoMercator)
-                                                                 (.translate #js [(* 480 (/ 180 960)) (* 250 (/ 180 960))])
-                                                                 (.scale (* (.scale (d3-geo/geoMercator)) (/ 180 960))))))
-                                           p)
-                                       :fill (.interpolateMagma d3-scale-chromatic (/ i (count c)))}]))
-                                 (.-coordinates cont)))))]]])])))
+         [:svg {:width 960 :height 500 :viewBox "0 0 960 500"}
+          [:g
+           (map
+            (fn [coordinates]
+              (let [p #js {:type "Polygon" :coordinates coordinates}]
+                [:path {:key [coordinates]
+                        :d (path p)
+                        :on-click #(js/console.log
+                                    (.bounds path p)
+                                    (clj->js (map (fn [p] (.invert projection p)) (.bounds path p))))}]))
+            (.-geometry.coordinates (first (.-features @world))))]
+          [:g {:opacity 0.7}
+           (->> c
+                (map-indexed (fn [i cont]
+                               (j/assoc! cont :coordinates
+                                         (clj->js
+                                          (for [polygon (js->clj (.-coordinates cont))]
+                                            (for [ring polygon]
+                                              (for [[lng lat] ring]
+                                                [(lng-scale lng) (lat-scale lat)])))))
+                               (map
+                                (fn [polygon]
+                                  (let [p #js {:type "Polygon" :coordinates polygon}]
+                                    [:path.contour
+                                     {:key [i polygon]
+                                      :value (.-value cont)
+                                      :on-click #(js/console.log
+                                                  (.-value cont)
+                                                  :pixels (.bounds path p)
+                                                  :coords (clj->js (map (fn [p] (.invert projection p)) (.bounds path p))))
+                                      :d (path p)
+                                      :fill (.interpolateMagma d3-scale-chromatic (/ i (count c)))}]))
+                                (.-coordinates cont)))))]])])))
 
 (dom/render
  [temperatur-contour]
