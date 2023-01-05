@@ -9,9 +9,9 @@
             [reagent.ratom :as r]
             [tech.thomas-sojka.viz.climate-change.data :as data]))
 
-(def surface-temperature-data (r/atom nil))
-(def geojson-world (r/atom nil))
-(def year (r/atom 1550))
+(defonce surface-temperature-data (r/atom nil))
+(defonce geojson-world (r/atom nil))
+(defonce year (r/atom 1550))
 
 (def projection (d3-geo/geoMercator))
 (def path (d3-geo/geoPath projection))
@@ -72,17 +72,18 @@
                             (.-coordinates cont)))))]]]))
 
 (defn app []
-  (-> (js/fetch "/data/climate-change/gistemp250_GHCNv4.nc")
-   (.then (fn [res] (.arrayBuffer res)))
-   (.then (fn [d] (reset! surface-temperature-data (data/read d)))))
-  (-> (js/fetch "/data/land-50m.json")
-   (.then (fn [res] (.json res)))
-   (.then (fn [d] (reset! geojson-world (first (.-features (.feature topojson d ^js (.-objects.land d))))))))
+  (when-not @surface-temperature-data
+      (-> (js/fetch "/data/climate-change/gistemp250_GHCNv4.nc")
+          (.then (fn [res] (.arrayBuffer res)))
+          (.then (fn [d] (reset! surface-temperature-data (data/read d))))))
+  (when-not @geojson-world
+      (-> (js/fetch "/data/land-50m.json")
+          (.then (fn [res] (.json res)))
+          (.then (fn [d] (reset! geojson-world (first (.-features (.feature topojson d ^js (.-objects.land d)))))))))
   (fn []
     (when (and @surface-temperature-data @geojson-world)
       [temperatur-contour {:geojson-world @geojson-world
                            :surface-temperature-data @surface-temperature-data}])))
 
-(defn main [])
-
-(dom/render [app] (js/document.getElementById "app"))
+(defn ^:dev/after-load main []
+  (dom/render [app] (js/document.getElementById "app")))
