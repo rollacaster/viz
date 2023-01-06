@@ -4,7 +4,6 @@
             ["d3-scale" :as d3-scale]
             ["d3-scale-chromatic" :as d3-scale-chromatic]
             ["topojson-client" :as topojson]
-            [applied-science.js-interop :as j]
             [goog.string :as gstring]
             [reagent.dom :as dom]
             [reagent.ratom :as r]
@@ -57,15 +56,16 @@
       [:g {:opacity 0.7}
        (->> c
             (map-indexed (fn [i cont]
-                           (j/assoc! cont :coordinates
-                                     (clj->js
-                                      (for [polygon (js->clj (.-coordinates cont))]
-                                        (for [ring polygon]
-                                          (for [[lng lat] ring]
-                                            [(lng-scale lng) (lat-scale lat)])))))
                            [:path.contour
                             {:value (.-value cont)
-                             :d (path cont)
+                             :d (path (clj->js
+                                       (update (js->clj cont)
+                                               "coordinates"
+                                               (fn [coordiantes]
+                                                 (for [polygon coordiantes]
+                                                   (for [ring polygon]
+                                                     (for [[lng lat] ring]
+                                                       [(lng-scale lng) (lat-scale lat)])))))))
                              :fill (.interpolateMagma d3-scale-chromatic (/ i (count c)))}])))]]]))
 
 (defn app []
