@@ -5,6 +5,7 @@
             ["d3-scale-chromatic" :as d3-scale-chromatic]
             ["topojson-client" :as topojson]
             [applied-science.js-interop :as j]
+            [goog.string :as gstring]
             [reagent.dom :as dom]
             [reagent.ratom :as r]
             [tech.thomas-sojka.viz.climate-change.data :as data]))
@@ -39,7 +40,9 @@
         c (->> contour-data into-array contours)]
     [:div
      [:input {:type "range" :min 0 :max 1704 :value @year :on-change #(reset! year ^js (.-target.value %))}]
-     [:span (str (+ 1880 (js/Math.floor (/ (int @year) 12))) "-" (inc (mod @year 12)))]
+     [:span (str (+ 1880 (js/Math.floor (/ (int @year) 12)))
+                 "-"
+                 (gstring/format "%02d" (inc (mod @year 12))))]
      [:style {:dangerouslySetInnerHTML {:__html ".contour:hover {fill: red}"}}]
      [:div.flex.items-center
       (map-indexed (fn [i contour]
