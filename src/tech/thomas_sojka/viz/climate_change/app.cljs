@@ -5,13 +5,14 @@
             ["d3-scale-chromatic" :as d3-scale-chromatic]
             ["topojson-client" :as topojson]
             [goog.string :as gstring]
+            [goog.string.format]
             [reagent.dom :as dom]
             [reagent.ratom :as r]
             [tech.thomas-sojka.viz.climate-change.data :as data]))
 
 (defonce surface-temperature-data (r/atom nil))
 (defonce geojson-world (r/atom nil))
-(defonce year (r/atom 1550))
+(defonce year (r/atom 0))
 
 (def projection (d3-geo/geoMercator))
 (def path (d3-geo/geoPath projection))
@@ -27,21 +28,19 @@
       (.range #js [-90 90])))
 
 (defn temperatur-contour [{:keys [surface-temperature-data geojson-world]}]
-  (let [data (update-vals
-              (->> @year
-                   (data/temp-anamoly-for-time surface-temperature-data)
-                   (group-by (juxt :lon :lat)))
-              #(first (map :anomaly %)))
-        contour-data (for [lat (range -89 91 2)
-                           long (range -179 181 2)]
-                       (get data [long lat] 0))
-        contours (-> (d3-contour/contours) (.size (clj->js [180 90])))
-        c (->> contour-data into-array contours)]
+  (let [data (aget surface-temperature-data @year)
+        contours (-> (d3-contour/contours) (.size (clj->js [180 90])) (.thresholds (clj->js (range -10 11))))
+        c (->> data into-array contours)]
     [:div
-     [:input {:type "range" :min 0 :max 1704 :value @year :on-change #(reset! year ^js (.-target.value %))}]
+     [:input {:type "range" :min 0 :max 1704 :value @year :on-change #(reset! year (int ^js (.-target.value %)))}]
      [:span (str (+ 1880 (js/Math.floor (/ (int @year) 12)))
                  "-"
                  (gstring/format "%02d" (inc (mod @year 12))))]
+     [:button.bg-gray-200.p-1.rounded.ml-2 {:on-click (fn []
+                                                        (doseq [i (range 0 1709)]
+                                                          (js/setTimeout
+                                                           (fn [] (swap! year inc)) (* i 70))))}
+      "Play"]
      [:style {:dangerouslySetInnerHTML {:__html ".contour:hover {fill: red}"}}]
      [:div.flex.items-center
       (map-indexed (fn [i contour]
@@ -50,29 +49,31 @@
                       [:div.mr-1 (.-value contour)]
                       [:span.inline-block.w-4.h-4 {:style {:background-color (.interpolateMagma d3-scale-chromatic (/ i (count c)))}}]])
                    c)]
-
      [:svg {:width 960 :height 500 :viewBox "0 0 960 500"}
-      [:g [:path {:d (path geojson-world)}]]
-      [:g {:opacity 0.7}
+      [:g [:path {:opacity 0.5 :d (path geojson-world)}]]
+      [:g {:opacity 0.9}
        (->> c
             (map-indexed (fn [i cont]
+                           (set! (.-coordinates cont)
+                                 (.map (.-coordinates cont)
+                                       (fn [polygon]
+                                         (.map polygon
+                                               (fn [ring]
+                                                 (.map ring
+                                                       (fn [[lng lat]] #js [(lng-scale lng) (lat-scale lat)])))))))
+
                            [:path.contour
-                            {:value (.-value cont)
-                             :d (path (clj->js
-                                       (update (js->clj cont)
-                                               "coordinates"
-                                               (fn [coordiantes]
-                                                 (for [polygon coordiantes]
-                                                   (for [ring polygon]
-                                                     (for [[lng lat] ring]
-                                                       [(lng-scale lng) (lat-scale lat)])))))))
+                            {:key (.-value cont)
+                             :value (.-value cont)
+                             :on-click #(prn (.-value cont))
+                             :d (path cont)
                              :fill (.interpolateMagma d3-scale-chromatic (/ i (count c)))}])))]]]))
 
 (defn app []
   (when-not @surface-temperature-data
       (-> (js/fetch "/data/climate-change/gistemp250_GHCNv4.nc")
           (.then (fn [res] (.arrayBuffer res)))
-          (.then (fn [d] (reset! surface-temperature-data (data/read d))))))
+          (.then (fn [d] (reset! surface-temperature-data (-> d data/read data/partition-tempanamoly))))))
   (when-not @geojson-world
       (-> (js/fetch "/data/land-50m.json")
           (.then (fn [res] (.json res)))
