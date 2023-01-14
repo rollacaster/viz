@@ -9,5 +9,5 @@
   (lodash/chunk
    (.map
     ^js (.getDataVariable reader "tempanomaly")
-    (fn [v] (if (= v 32767) 0 (* v 0.01))))
+    (fn [v] (if (= v 32767) 0 (+ (* v 0.01) 10))))
    (* 90 180)))

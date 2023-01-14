@@ -27,6 +27,9 @@
       (.domain #js [0 90])
       (.range #js [-90 90])))
 
+(def contours (-> (d3-contour/contours) (.size (clj->js [180 90])) (.thresholds (clj->js (range 0 21)))))
+(defn contours-at-time [surface-temperature-data time]
+  (->> time (aget surface-temperature-data) into-array contours))
 (defn temperatur-contour [{:keys [surface-temperature-data geojson-world]}]
   (let [data (aget surface-temperature-data @year)
         contours (-> (d3-contour/contours) (.size (clj->js [180 90])) (.thresholds (clj->js (range -10 11))))
@@ -39,35 +42,40 @@
      [:button.bg-gray-200.p-1.rounded.ml-2 {:on-click (fn []
                                                         (doseq [i (range 0 1709)]
                                                           (js/setTimeout
-                                                           (fn [] (swap! year inc)) (* i 70))))}
+                                                           (fn [] (swap! year inc)) (* i 130))))}
       "Play"]
      [:style {:dangerouslySetInnerHTML {:__html ".contour:hover {fill: red}"}}]
      [:div.flex.items-center
-      (map-indexed (fn [i contour]
-                     ^{:key (.-value contour)}
+      (map-indexed (fn [i multi-polygon]
+                     ^{:key (.-value multi-polygon)}
                      [:div.flex.mr-2.items-center
-                      [:div.mr-1 (.-value contour)]
+                      [:div.mr-1 (- (.-value multi-polygon) 10)]
                       [:span.inline-block.w-4.h-4 {:style {:background-color (.interpolateMagma d3-scale-chromatic (/ i (count c)))}}]])
                    c)]
      [:svg {:width 960 :height 500 :viewBox "0 0 960 500"}
       [:g [:path {:opacity 0.5 :d (path geojson-world)}]]
-      [:g {:opacity 0.9}
+      [:g {:opacity 0.7}
        (->> c
-            (map-indexed (fn [i cont]
-                           (set! (.-coordinates cont)
-                                 (.map (.-coordinates cont)
+            (map-indexed (fn [i multi-polygon]
+                           (set! (.-coordinates multi-polygon)
+                                 (.map (.-coordinates multi-polygon)
                                        (fn [polygon]
                                          (.map polygon
                                                (fn [ring]
                                                  (.map ring
                                                        (fn [[lng lat]] #js [(lng-scale lng) (lat-scale lat)])))))))
-
-                           [:path.contour
-                            {:key (.-value cont)
-                             :value (.-value cont)
-                             :on-click #(prn (.-value cont))
-                             :d (path cont)
-                             :fill (.interpolateMagma d3-scale-chromatic (/ i (count c)))}])))]]]))
+                           (map
+                            (fn [[j polygon]]
+                              (map-indexed
+                               (fn [k ring-path]
+                                 [:path.contour
+                                  {:key (str (.-value multi-polygon) " " j " " k)
+                                   :value (str (.-value multi-polygon) " " j "" k)
+                                   :on-click #(prn (.-value multi-polygon))
+                                   :d (str ring-path "Z")
+                                   :fill (.interpolateMagma d3-scale-chromatic (/ i (count c)))}])
+                               (str/split (path #js {:type "Polygon" :coordinates polygon}) #"Z")))
+                            (map-indexed vector (.-coordinates multi-polygon))))))]]]))
 
 (defn app []
   (when-not @surface-temperature-data
