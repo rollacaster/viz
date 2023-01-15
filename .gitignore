@@ -5,5 +5,7 @@
 /target/
 /resources/gistemp250_GHCNv4.nc
 /.cpcache/
-/resources/public/js
-/resources/public/css/
+/resources/climate-change/js
+/resources/climate-change/css/
+/resources/contour-by-example/js
+/resources/contour-by-example/css/

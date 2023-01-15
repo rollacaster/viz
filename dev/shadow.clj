@@ -7,9 +7,8 @@
 
 (defn -main [& _args]
   (server/start!)
-  (shadow/watch :script)
-  (shadow/watch :app)
-  (process '[node target/script.js])
+  (shadow/watch :climate-change)
+  (shadow/watch :contour-by-example)
   (process '[npx run dev])
-  (shadow/nrepl-select :script)
+  (shadow/nrepl-select ::climate-change)
   (browse/browse-url "http://localhost:9101"))

@@ -1,7 +1,11 @@
 {
   "scripts": {
-    "build": "postcss resources/styles.css --dir resources/public/css",
-    "dev": "postcss resources/styles.css --dir resources/public/css -w"
+    "build": "yarn build:climate-change & yarn build:contour-by-example",
+    "build:climate-change": "postcss resources/styles.css --dir resources/climate-change/css",
+    "build:contour-by-example": "postcss resources/styles.css --dir resources/contour-by-example/css",
+    "dev": "yarn dev:climate-change & yarn dev:contour-by-example",
+    "dev:climate-change": "postcss resources/styles.css --dir resources/climate-change/css -w",
+    "dev:contour-by-example": "postcss resources/styles.css --dir resources/contour-by-example/css -w"
   },
   "devDependencies": {
     "autoprefixer": "^10.4.8",

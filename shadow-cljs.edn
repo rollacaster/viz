@@ -1,17 +1,15 @@
 {:deps true
  :nrepl {:port 9100}
- :dev-http {9101 "resources/public"}
+ :dev-http {9101 "resources/climate-change"
+            9102 "resources/contour-by-example"}
  :builds
- {:script {:target :node-script
-           :main tech.thomas-sojka.viz.climate-change.core/main
-           :output-to "target/script.js" }
-  :climate-change {:target :browser
-                   :output-dir "resources/public/js"
+ {:climate-change {:target :browser
+                   :output-dir "resources/climate-change/js"
                    :asset-path "/js"
                    :compiler-options {:output-feature-set :es-next}
                    :modules {:main {:init-fn tech.thomas-sojka.viz.climate-change.app/main}}}
   :contour-by-example {:target :browser
-                       :output-dir "resources/public/js"
+                       :output-dir "resources/contour-by-example/js"
                        :asset-path "/js"
                        :compiler-options {:output-feature-set :es-next}
                        :modules {:main {:init-fn tech.thomas-sojka.viz.contour-by-example.core/main}}}}}
