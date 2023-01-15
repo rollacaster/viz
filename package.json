@@ -5,10 +5,10 @@
   },
   "devDependencies": {
     "autoprefixer": "^10.4.8",
-    "cssnano": "^5.1.12",
+    "cssnano": "^5.1.14",
     "postcss": "^8.4.14",
     "postcss-cli": "^10.0.0",
-    "shadow-cljs": "^2.19.5",
+    "shadow-cljs": "^2.20.20",
     "tailwindcss": "^3.1.7"
   },
   "dependencies": {
