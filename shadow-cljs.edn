@@ -5,8 +5,13 @@
  {:script {:target :node-script
            :main tech.thomas-sojka.viz.climate-change.core/main
            :output-to "target/script.js" }
-  :app {:target :browser
-        :output-dir "resources/public/js"
-        :asset-path "/js"
-        :compiler-options {:output-feature-set :es-next}
-        :modules {:main {:init-fn tech.thomas-sojka.viz.climate-change.app/main}}}}}
+  :climate-change {:target :browser
+                   :output-dir "resources/public/js"
+                   :asset-path "/js"
+                   :compiler-options {:output-feature-set :es-next}
+                   :modules {:main {:init-fn tech.thomas-sojka.viz.climate-change.app/main}}}
+  :contour-by-example {:target :browser
+                       :output-dir "resources/public/js"
+                       :asset-path "/js"
+                       :compiler-options {:output-feature-set :es-next}
+                       :modules {:main {:init-fn tech.thomas-sojka.viz.contour-by-example.core/main}}}}}
