@@ -5,11 +5,11 @@
  :builds
  {:climate-change {:target :browser
                    :output-dir "resources/climate-change/js"
-                   :asset-path "/js"
+                   :asset-path "/climate-change/js"
                    :compiler-options {:output-feature-set :es-next}
                    :modules {:main {:init-fn tech.thomas-sojka.viz.climate-change.app/main}}}
   :contour-by-example {:target :browser
                        :output-dir "resources/contour-by-example/js"
-                       :asset-path "/js"
+                       :asset-path "/contour-by-example/js"
                        :compiler-options {:output-feature-set :es-next}
                        :modules {:main {:init-fn tech.thomas-sojka.viz.contour-by-example.core/main}}}}}
