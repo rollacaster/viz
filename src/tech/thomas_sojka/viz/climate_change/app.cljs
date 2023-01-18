@@ -79,11 +79,11 @@
 
 (defn app []
   (when-not @surface-temperature-data
-      (-> (js/fetch "/climate-change/data/gistemp250_GHCNv4.nc")
+      (-> (js/fetch "data/gistemp250_GHCNv4.nc")
           (.then (fn [res] (.arrayBuffer res)))
           (.then (fn [d] (reset! surface-temperature-data (-> d data/read data/partition-tempanamoly))))))
   (when-not @geojson-world
-      (-> (js/fetch "/climate-change/data/land-50m.json")
+      (-> (js/fetch "data/land-50m.json")
           (.then (fn [res] (.json res)))
           (.then (fn [d] (reset! geojson-world (first (.-features (.feature topojson d ^js (.-objects.land d)))))))))
   (fn []
