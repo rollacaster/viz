@@ -6,7 +6,10 @@
 /resources/gistemp250_GHCNv4.nc
 /.cpcache/
 /resources/climate-change/js
+/resources/climate-change/data
 /resources/climate-change/css/
 /resources/contour-by-example/js
 /resources/contour-by-example/css/
 .vercel
+/api
+.nrepl-port
