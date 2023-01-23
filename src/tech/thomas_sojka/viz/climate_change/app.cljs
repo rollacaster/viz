@@ -64,17 +64,6 @@
          (let [[x y] center]
            [:text.fill-red-700.font-bold {:x x :y y} label])]))))
 
-(defn- render-polygon [{:keys [polygon next-polygon render-ring]}]
-  [:<>
-   (map
-    (fn [[k ring-path] next-ring-path]
-      ^{:key k}
-      [render-ring {:d ring-path
-                    :next-d next-ring-path
-                    :center (.centroid path #js {:type "Polygon" :coordinates polygon})}])
-    (map-indexed vector polygon)
-    next-polygon)])
-
 (defn- polygons-with-next [multi-polygon next-contour intersections]
   (->> (range (count (.-coordinates next-contour)))
        (map (fn [next-polygon-idx]
@@ -108,28 +97,19 @@
                                    (case type
                                      :update (let [{:keys [from to]} data]
                                                ^{:key j}
-                                               [render-polygon {:polygon from
-                                                                :next-polygon to
-                                                                :render-ring
-                                                                (fn [{:keys [d next-d center]}]
-                                                                  [render-ring {:value (.-value multi-polygon)
-                                                                                :fill (color-scale (/ i (count contour)))
-                                                                                :center center
-                                                                                :label j
-                                                                                :d (path #js {:type "Polygon" :coordinates #js [d]})
-                                                                                :next-d (path #js {:type "Polygon" :coordinates #js [next-d]})}])}])
+                                               [render-ring {:d (path #js {:type "Polygon" :coordinates from})
+                                                             :next-d (path #js {:type "Polygon" :coordinates to})
+                                                             :center (.centroid path #js {:type "Polygon" :coordinates to})
+                                                             :fill (color-scale (/ i (count contour)))
+                                                             :label j}])
                                      :new
-                                     ^{:key j}
-                                     [render-polygon {:polygon data
-                                                      :next-polygon data
-                                                      :render-ring
-                                                      (fn [{:keys [d next-d center]}]
-                                                        [render-ring {:value (.-value multi-polygon)
-                                                                      :fill (color-scale (/ i (count contour)))
-                                                                      :center center
-                                                                      :label j
-                                                                      :d (path #js {:type "Polygon" :coordinates #js [d]})
-                                                                      :next-d (path #js {:type "Polygon" :coordinates #js [next-d]})}])}]))))))))))
+                                     (when data
+                                       ^{:key j}
+                                       [render-ring {:d (path #js {:type "Polygon" :coordinates data})
+                                                     :next-d (path #js {:type "Polygon" :coordinates data})
+                                                     :center (.centroid path #js {:type "Polygon" :coordinates data})
+                                                     :fill (color-scale (/ i (count contour)))
+                                                     :label j}])))))))))))
 
 (defn- render-contours [{:keys [contour color-scale]}]
   (->> contour
@@ -143,16 +123,11 @@
                               (map
                                (fn [[j polygon]]
                                  ^{:key j}
-                                 [render-polygon {:polygon polygon
-                                                  :next-polygon polygon
-                                                  :render-ring
-                                                  (fn [{:keys [d next-d center]}]
-                                                    [render-ring {:value (.-value multi-polygon)
-                                                                  :fill (color-scale (/ i (count contour)))
-                                                                  :center center
-                                                                  :label j
-                                                                  :d (path #js {:type "Polygon" :coordinates #js [d]})
-                                                                  :next-d (path #js {:type "Polygon" :coordinates #js [next-d]})}])}]))))))))
+                                 [render-ring {:d (path #js {:type "Polygon" :coordinates polygon})
+                                               :next-d (path #js {:type "Polygon" :coordinates polygon})
+                                               :center (.centroid path #js {:type "Polygon" :coordinates polygon})
+                                               :fill (color-scale (/ i (count contour)))
+                                               :label j}]))))))))
 
 (defn- fix-coords [next-contour]
   (doseq [multi-polygon next-contour]
@@ -175,7 +150,7 @@
      [:button.bg-gray-200.p-1.rounded.ml-2 {:on-click (fn []
                                                         (doseq [i (range 0 1709)]
                                                           (js/setTimeout
-                                                           (fn [] (swap! inputs update :year inc)) (* i 400))))}
+                                                           (fn [] (swap! inputs update :year inc)) (* i 1000))))}
       "Play"]
      [:style {:dangerouslySetInnerHTML {:__html ".contour:hover {fill: red}"}}]
      [:div.flex.items-center.mb-4
@@ -209,8 +184,6 @@
             {:contour c
              :next-contour next-contour
              :color-scale #(.interpolateTurbo d3-scale-chromatic %)}))]]
-        year
-
         [:svg {:width width :height height :viewBox (str "0 0 "960 " " 500)}
          [:g [:path {:opacity 0.5 :d (path geojson-world)}]]
          [:g {:opacity 0.7}
@@ -218,7 +191,6 @@
            (render-contours
             {:contour c
              :color-scale #(.interpolateTurbo d3-scale-chromatic %)}))]]
-        year
         [:svg {:width width :height height :viewBox (str "0 0 "960 " " 500)}
          [:g [:path {:opacity 0.5 :d (path geojson-world)}]]
          [:g {:opacity 0.7}
