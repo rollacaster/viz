@@ -1,2 +1,11 @@
 {:tasks
- {dev (clojure "-Mdev")}}
+ {dev (clojure "-Mdev")
+  release {:depends [release:clean:contour  release:clean:climate
+                     release:contour release:climate]}
+  release:clean:contour (shell "rm" "-rf" "resources/contour-by-example/js")
+  release:clean:climate (shell "rm" "-rf" "resources/climate-change/js")
+  release:contour (shell "shadow-cljs" "release" ":climate-change")
+  release:climate (shell "shadow-cljs" "release" ":contour-by-example")
+  deploy {:depends [release deploy:vercel]}
+  deploy:vercel (shell "vercel")
+  deploy:prod (shell "vercel --prod")}}
