@@ -5,12 +5,12 @@
             ["d3-scale" :as d3-scale]
             ["d3-scale-chromatic" :as d3-scale-chromatic]
             ["flubber" :as flubber]
-            ["lodash" :as lodash]
+            ["react-globe.gl" :as globe]
             ["topojson-client" :as topojson]
             [goog.string :as gstring]
             [goog.string.format]
             [reagent.dom :as dom]
-            [reagent.ratom :as r]
+            [reagent.core :as r]
             [tech.thomas-sojka.viz.climate-change.data :as data]))
 
 (defonce surface-temperature-data (r/atom nil))
@@ -25,12 +25,12 @@
 (def lng-scale
   (-> (d3-scale/scaleLinear)
       (.domain #js [0 180])
-      (.range #js [-180 180])))
+      (.range #js [-179 179])))
 
 (def lat-scale
   (-> (d3-scale/scaleLinear)
       (.domain #js [0 90])
-      (.range #js [-90 90])))
+      (.range #js [-89 89])))
 
 (def contours (-> (d3-contour/contours)
                   (.size (clj->js [180 90]))
@@ -174,6 +174,21 @@
            c)]
      (fix-coords c)
      (fix-coords next-contour)
+
+
+     [:> globe
+      {:globeImageUrl "//unpkg.com/three-globe/example/img/earth-day.jpg"
+       :hexBinPointsData (->> (get surface-temperature-data year)
+                              (map-indexed vector)
+                              (reduce
+                               (fn [points [i v]]
+                                 (if (zero? v)
+                                   points
+                                   (conj points
+                                         #js {:lat (- (* (js/Math.floor (/ i 180)) 2) 89)
+                                              :lng (- (* (mod i 180) 2) 179)})))
+                               [])
+                              js->clj)}]
      (let [[width height] (map #(/ % 1.3) [960 500])]
        [:<>
         [:svg {:width width :height height :viewBox (str "0 0 "960 " " 500)}

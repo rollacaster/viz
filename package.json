@@ -27,7 +27,10 @@
     "nice-color-palettes": "^3.0.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
+    "react-globe": "^5.0.2",
+    "react-globe.gl": "^2.22.10",
     "react-json-view": "^1.21.3",
+    "three": "^0.148.0",
     "topojson-client": "^3.1.0"
   }
 }
