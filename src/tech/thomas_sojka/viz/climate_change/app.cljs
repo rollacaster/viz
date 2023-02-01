@@ -16,7 +16,7 @@
 (defonce surface-temperature-data (r/atom nil))
 (defonce geojson-world (r/atom nil))
 (defonce inputs (r/atom {:year 0
-                         :value-filter 14}))
+                         :value-filter nil}))
 
 (def projection (-> (d3-geo/geoMercator)
                     (.translate #js [480 300])))
@@ -138,6 +138,20 @@
                            (fn [ring]
                              (.map ring (fn [[lng lat]] #js [(lng-scale lng) (lat-scale lat)])))))))))
 
+(defn- hex-bin-points-data [surface-temperature-data year]
+  (->> (get surface-temperature-data year)
+       (map-indexed vector)
+       (reduce
+        (fn [points [i v]]
+          (if (zero? v)
+            points
+            (conj points
+                  #js {:lat (- (* (js/Math.floor (/ i 180)) 2) 89)
+                       :lng (- (* (mod i 180) 2) 179)
+                       :val v})))
+        [])
+       js->clj))
+
 (defn temperatur-contour [{:keys [surface-temperature-data geojson-world]}]
   (let [{:keys [value-filter year]} @inputs
         c (contours-at-time surface-temperature-data year)
@@ -174,46 +188,42 @@
            c)]
      (fix-coords c)
      (fix-coords next-contour)
-
-
-     [:> globe
-      {:globeImageUrl "//unpkg.com/three-globe/example/img/earth-day.jpg"
-       :hexBinPointsData (->> (get surface-temperature-data year)
-                              (map-indexed vector)
-                              (reduce
-                               (fn [points [i v]]
-                                 (if (zero? v)
-                                   points
-                                   (conj points
-                                         #js {:lat (- (* (js/Math.floor (/ i 180)) 2) 89)
-                                              :lng (- (* (mod i 180) 2) 179)})))
-                               [])
-                              js->clj)}]
-     (let [[width height] (map #(/ % 1.3) [960 500])]
-       [:<>
-        [:svg {:width width :height height :viewBox (str "0 0 "960 " " 500)}
-         [:g [:path {:opacity 0.5 :d (path geojson-world)}]]
-         [:g {:opacity 0.7}
-          (doall
-           (render-animated-contours
-            {:contour c
-             :next-contour next-contour
-             :color-scale #(.interpolateTurbo d3-scale-chromatic %)}))]]
-        [:svg {:width width :height height :viewBox (str "0 0 "960 " " 500)}
-         [:g [:path {:opacity 0.5 :d (path geojson-world)}]]
-         [:g {:opacity 0.7}
-          (doall
-           (render-contours
-            {:contour c
-             :color-scale #(.interpolateTurbo d3-scale-chromatic %)}))]]
-        [:svg {:width width :height height :viewBox (str "0 0 "960 " " 500)}
-         [:g [:path {:opacity 0.5 :d (path geojson-world)}]]
-         [:g {:opacity 0.7}
-          (doall
-           (render-contours
-            {:contour next-contour
-             :color-scale #(.interpolateTurbo d3-scale-chromatic %)}))]]
-        (inc year)])]))
+     (let [color (fn [d] (.interpolateTurbo d3-scale-chromatic (/ (.-val (first (.-points d))) 21)))]
+       [:div
+        [:div
+         [:> globe
+          {:hexSideColor color
+           :hexTopColor color
+           :hexBinResolution 3
+           :onHexClick js/console.log
+           :hexBinPointWeight (fn [d] ^js (.-val d))
+           :globeImageUrl "//unpkg.com/three-globe/example/img/earth-day.jpg"
+           :hexBinPointsData (hex-bin-points-data surface-temperature-data year)}]]
+        (let [[width height] (map #(/ % 1.3) [960 500])]
+          [:div
+           [:svg {:width width :height height :viewBox (str "0 0 "960 " " 500)}
+            [:g [:path {:opacity 0.5 :d (path geojson-world)}]]
+            [:g {:opacity 0.7}
+             (doall
+              (render-animated-contours
+               {:contour c
+                :next-contour next-contour
+                :color-scale #(.interpolateTurbo d3-scale-chromatic %)}))]]
+           [:svg {:width width :height height :viewBox (str "0 0 "960 " " 500)}
+            [:g [:path {:opacity 0.5 :d (path geojson-world)}]]
+            [:g {:opacity 0.7}
+             (doall
+              (render-contours
+               {:contour c
+                :color-scale #(.interpolateTurbo d3-scale-chromatic %)}))]]
+           [:svg {:width width :height height :viewBox (str "0 0 "960 " " 500)}
+            [:g [:path {:opacity 0.5 :d (path geojson-world)}]]
+            [:g {:opacity 0.7}
+             (doall
+              (render-contours
+               {:contour next-contour
+                :color-scale #(.interpolateTurbo d3-scale-chromatic %)}))]]
+           (inc year)])])]))
 
 (defn app []
   (when-not @surface-temperature-data
